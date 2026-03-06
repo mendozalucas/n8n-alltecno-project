@@ -1,0 +1,746 @@
+{
+  "name": "n8n-alltecno-project",
+  "nodes": [
+    {
+      "parameters": {
+        "amount": 1,
+        "unit": "hours"
+      },
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1.1,
+      "position": [
+        80,
+        -592
+      ],
+      "id": "1d6e4f8d-baa4-48b2-9e12-7e37a019e707",
+      "name": "Wait",
+      "webhookId": "f6fe6f2e-df66-45b3-8e10-2b6d8ed5ce9c"
+    },
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "153cb599-3236-4568-8e8a-f06511d0dd9c",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [
+        -352,
+        -416
+      ],
+      "id": "784a5bb8-3dae-4296-b7cf-ec7fea37d280",
+      "name": "Webhook",
+      "webhookId": "153cb599-3236-4568-8e8a-f06511d0dd9c"
+    },
+    {
+      "parameters": {
+        "message": "oka",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.chat",
+      "typeVersion": 1.2,
+      "position": [
+        912,
+        288
+      ],
+      "id": "d5231c13-b48c-41d9-893f-fa393b780263",
+      "name": "Chat",
+      "webhookId": "f2c3a1db-19c5-4a1d-812b-baec17465deb",
+      "disabled": true
+    },
+    {
+      "parameters": {
+        "jsCode": "const normalize = (text) =>\n  text\n    ?.toLowerCase()\n    .normalize(\"NFD\")\n    .replace(/[\\u0300-\\u036f]/g, \"\")\n    .replace(/[^a-z0-9 ]/g, \"\")\n    .trim();\n\nconst userMessage = normalize(\n  $('When chat message received').first().json.chatInput\n);\n\n// Palabras relevantes (ignora palabras cortas tipo \"de\", \"la\", etc.)\nconst words = userMessage\n  .split(\" \")\n\nconst rows = $input.all();\n\nconst filtered = rows.filter(item => {\n  const productName = normalize(item.json[\"Nombre Producto\"]);\n  const stock = Number(item.json[\"Stock\"]) || 0; \n\n  if (stock <= 0) return false; \n\n  let matches = 0;\n\n  for (const word of words) {\n    if (productName.includes(word)) {\n      matches++;\n    }\n  }\n\n  return matches >= 2; // mínimo 2 coincidencias\n});\n\nreturn [\n  {\n    json: {\n      productos: filtered.map(i => i.json)\n    }\n  }\n];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -64,
+        480
+      ],
+      "id": "5213637a-aec6-4eb6-b8f0-c5f004899765",
+      "name": "Code in JavaScript1",
+      "disabled": true
+    },
+    {
+      "parameters": {
+        "authentication": "serviceAccount",
+        "documentId": {
+          "__rl": true,
+          "value": "1B87Gqs-Ghd8rvtxi8i6309yYw_Zyf0Ze9q5rTCm5PT0",
+          "mode": "list",
+          "cachedResultName": "tecno_test",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1B87Gqs-Ghd8rvtxi8i6309yYw_Zyf0Ze9q5rTCm5PT0/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "gid=0",
+          "mode": "list",
+          "cachedResultName": "tabla_productos",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1B87Gqs-Ghd8rvtxi8i6309yYw_Zyf0Ze9q5rTCm5PT0/edit#gid=0"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        -272,
+        480
+      ],
+      "id": "bd25d5ea-fd69-4993-a674-f193f3ba9659",
+      "name": "productos_sheet1",
+      "credentials": {
+        "googleApi": {
+          "id": "1pY0NxymOucbHi2P",
+          "name": "Google Service Account account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "80a31d43-08df-4c62-8abc-31380afa5bff",
+              "leftValue": "={{ $json.productos }}",
+              "rightValue": "",
+              "operator": {
+                "type": "array",
+                "operation": "notEmpty",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        112,
+        480
+      ],
+      "id": "db9390cb-663f-4e74-ada6-5580b4bc4ae1",
+      "name": "If1",
+      "disabled": true
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.ycloud.com/v2/whatsapp/messages",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "from",
+              "value": "={{ $('Webhook').item.json.body.whatsappInboundMessage.to }}"
+            },
+            {
+              "name": "to",
+              "value": "={{ $('Webhook').item.json.body.whatsappInboundMessage.from }}"
+            },
+            {
+              "name": "type",
+              "value": "text"
+            },
+            {
+              "name": "text.body",
+              "value": "={{ $json.output }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        864,
+        -400
+      ],
+      "id": "a451b2d9-6d84-4c84-b8d7-fce7e0456422",
+      "name": "HTTP Request",
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "tdhPLS0ZWtXAEkFt",
+          "name": "YCLOUD"
+        }
+      }
+    },
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.noOp",
+      "typeVersion": 1,
+      "position": [
+        400,
+        688
+      ],
+      "id": "820d52d7-13a6-4a02-bd5a-655a1c7c4ac0",
+      "name": "No Operation, do nothing"
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "={{ $('When chat message received').item.json.chatInput }}",
+        "options": {
+          "systemMessage": "=En base a la siguiente pregunta del usuario:\n{{ $('When chat message received').item.json.chatInput }}\n\nDebes responder con el nombre del producto que mayor coincida con los objetos recibidos (debes compararlo con todos):\n{{ JSON.stringify($json.productos, null, 2) }}\n\nLuego, responderle en base a la descripción y decir su precio en usd\n\nReglas obligatorias:\n1. Si no se encuentra información en la herramienta, responde que no se encontró información en nuestra base oficial.\n2. Responde de manera cálida, cercana y profesional.\n3. Usa 1 o 2 emojis cuando sea apropiado.\n4. Después de presentarte o brindar información general, SIEMPRE finaliza con una pregunta abierta como:\n\"¿En qué más puedo ayudarte hoy?\"\n\nSiempre responde como representante de la empresa en idioma ESPAÑOL."
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 3.1,
+      "position": [
+        368,
+        288
+      ],
+      "id": "ec47682a-606d-4d30-9fb0-770470aff4a4",
+      "name": "AI Agent",
+      "disabled": true
+    },
+    {
+      "parameters": {
+        "options": {
+          "responseMode": "responseNodes"
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.chatTrigger",
+      "typeVersion": 1.4,
+      "position": [
+        -448,
+        480
+      ],
+      "id": "e3628d63-4797-40ad-958e-8cfd760e5eff",
+      "name": "When chat message received",
+      "webhookId": "d3b320c4-4b21-4394-a76f-0965446e6950",
+      "disabled": true
+    },
+    {
+      "parameters": {
+        "operation": "get",
+        "key": "={{ $('When chat message received').item.json.sessionId }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.redis",
+      "typeVersion": 1,
+      "position": [
+        688,
+        288
+      ],
+      "id": "29a26834-7bb7-49bb-8156-10ed3fc0b3a7",
+      "name": "Redis1",
+      "disabled": true
+    },
+    {
+      "parameters": {
+        "authentication": "serviceAccount",
+        "operation": "get",
+        "documentURL": "1lNb2IV7qLQME-JWEf77UQkxxQ5m_XEiJO1-N9MUgE34",
+        "simple": false
+      },
+      "type": "n8n-nodes-base.googleDocsTool",
+      "typeVersion": 2,
+      "position": [
+        688,
+        -144
+      ],
+      "id": "5cc882cc-f447-44af-af31-bd19351bbb04",
+      "name": "alltecno_document",
+      "credentials": {
+        "googleApi": {
+          "id": "1pY0NxymOucbHi2P",
+          "name": "Google Service Account account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "authentication": "serviceAccount",
+        "documentId": {
+          "__rl": true,
+          "value": "1B87Gqs-Ghd8rvtxi8i6309yYw_Zyf0Ze9q5rTCm5PT0",
+          "mode": "list",
+          "cachedResultName": "tecno_test",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1B87Gqs-Ghd8rvtxi8i6309yYw_Zyf0Ze9q5rTCm5PT0/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "gid=0",
+          "mode": "list",
+          "cachedResultName": "tabla_productos",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1B87Gqs-Ghd8rvtxi8i6309yYw_Zyf0Ze9q5rTCm5PT0/edit#gid=0"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        80,
+        -400
+      ],
+      "id": "872ee0ba-5167-4a0c-b1ea-9ab0cac5af64",
+      "name": "productos_sheet",
+      "credentials": {
+        "googleApi": {
+          "id": "1pY0NxymOucbHi2P",
+          "name": "Google Service Account account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const rows = $input.all();\n\nconst filtered = rows.filter(item => {\n  const stock = Number(item.json[\"Stock\"]) || 0; \n\n  if (stock <= 0) return false;\n  return true\n});\n\nreturn [\n  {\n    json: {\n      productos: filtered.map(i => i.json)\n    }\n  }\n];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        304,
+        -400
+      ],
+      "id": "d2796471-99e5-4e8c-9c41-83d2cee72a2d",
+      "name": "Code in JavaScript"
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "={{ $('Webhook').item.json.body.whatsappInboundMessage.text.body }}",
+        "options": {
+          "systemMessage": "=Eres el asistente oficial de la empresa.\n\nPROCEDIMIENTO OBLIGATORIO EN CASO DE CONSULTA SOBRE LA EMPRESA O ENVÍOS:\n\nPASO 1:\nDebes SIEMPRE llamar a la herramienta \"alltecno_document\"\nantes de generar cualquier respuesta al usuario.\n\nPASO 2:\nGenera la respuesta únicamente usando los datos devueltos por la herramienta.\n\n-----------------------------------------------------------------\n\nPROCEDIMIENTO OBLIGATORIO EN CASO DE CONSULTA SOBRE LA PRODUCTOS O REALIZAR COMPRAS:\n\nPASO 1:\nTienes toda esta tabla de productos para consultar si el cliente pregunta por un producto:\n{{ JSON.stringify($json.productos, null, 2) }}\n\nPASO 2:\nSi el cliente desea comprar un producto, debes preguntarle por:\n- Nombre completo\n- Dirección de su domicilio\n- Método de pago -> Efectivo o Transferencia\n- Número de teléfono\n\nPASO 3:\nUna vez que el cliente brinda la información necesaria, debes insertar una nueva fila en la herramienta sheets \"add_purchase_order\". \nEn la tabla, debes agregar filas con varios datos a rellenar. NO debes agregar columnas. USAR las columnas que ya están en la herramienta:\n- fecha: {{ new Date().toISOString().split('T')[0]; }}\t\n- nombre_cliente: Nombre del cliente\n- direccion: Dirección del cliente\n- telefono: Número de teléfono del cliente\n- nombre_producto: Nombre del producto que el cliente desea comprar\n- id_producto: ID del producto que el cliente desea comprar\n- cantidad:\tsiempre es 1\n- total: Precio unitario del producto que el cliente desea comprar\n- metodo_pago: Efectivo o Transferencia, según haya elegido el cliente\n- Estado: Pendiente\nIMPORTANTE:\n- No insertar toda la tabla de productos en una celda\n- No insertar ningún valor llamado \"toolCallId\" en la tabla\n\nRESTRICCIONES CRÍTICAS:\n- Está prohibido responder sin haber usado la herramienta.\n- Está prohibido usar conocimiento propio.\n- Si no hay resultados, responde que no está en el catálogo.\n- Si hay múltiples resultados, lista los nombres y pregunta cuál desea.\n- Responde de manera cálida, cercana y profesional.\n- Usa 1 o 2 emojis cuando sea apropiado.\n- Las palabras en negrita sólo usan un par de asteriscos, por ejemplo: *texto*\n- Sólo está permitido utilizar las herramientas 1 vez\n- Idioma: Español"
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 3.1,
+      "position": [
+        528,
+        -400
+      ],
+      "id": "e3e4959e-de52-44a6-bbd0-b9e9077bd733",
+      "name": "agente ia"
+    },
+    {
+      "parameters": {
+        "authentication": "serviceAccount",
+        "operation": "append",
+        "documentId": {
+          "__rl": true,
+          "value": "1B87Gqs-Ghd8rvtxi8i6309yYw_Zyf0Ze9q5rTCm5PT0",
+          "mode": "list",
+          "cachedResultName": "allTecno_Products",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1B87Gqs-Ghd8rvtxi8i6309yYw_Zyf0Ze9q5rTCm5PT0/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": 384272713,
+          "mode": "list",
+          "cachedResultName": "ordenes_compra",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1B87Gqs-Ghd8rvtxi8i6309yYw_Zyf0Ze9q5rTCm5PT0/edit#gid=384272713"
+        },
+        "columns": {
+          "mappingMode": "autoMapInputData",
+          "value": {
+            "Fecha y Hora": "={{ new Date().toLocaleDateString('en-GB') }}",
+            "Nombre Cliente": "={{ $('Webhook').item.json.body.whatsappInboundMessage.customerProfile.name }}",
+            "Telefono (+54)": "={{ $('Webhook').item.json.body.whatsappInboundMessage.from }}",
+            "ID Cliente": "={{ $('Webhook').item.json.body.id }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "Fecha y Hora",
+              "displayName": "Fecha y Hora",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Nombre Cliente",
+              "displayName": "Nombre Cliente",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Telefono (+54)",
+              "displayName": "Telefono (+54)",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "ID Cliente",
+              "displayName": "ID Cliente",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Nombre Producto",
+              "displayName": "Nombre Producto",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "ID Producto",
+              "displayName": "ID Producto",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Cantidad",
+              "displayName": "Cantidad",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Total ($)",
+              "displayName": "Total ($)",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Método de Pago",
+              "displayName": "Método de Pago",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Cantidad de Cuotas",
+              "displayName": "Cantidad de Cuotas",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Estado",
+              "displayName": "Estado",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheetsTool",
+      "typeVersion": 4.7,
+      "position": [
+        800,
+        -240
+      ],
+      "id": "565d23ee-f43f-42d7-a85f-13f51bb90e08",
+      "name": "add_purchase_order",
+      "credentials": {
+        "googleApi": {
+          "id": "1pY0NxymOucbHi2P",
+          "name": "Google Service Account account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "42a88443-537d-420c-a146-79c53f6b0417",
+              "leftValue": "={{ $json.body.type }}",
+              "rightValue": "whatsapp.smb.message.echoes",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        -144,
+        -416
+      ],
+      "id": "24714d42-2916-425e-8567-e4423fc9e9f5",
+      "name": "If2"
+    },
+    {
+      "parameters": {
+        "sessionIdType": "customKey",
+        "sessionKey": "={{ $('Webhook').item.json.body.whatsappInboundMessage.from }}",
+        "tableName": "n8n_testchat_histories"
+      },
+      "type": "@n8n/n8n-nodes-langchain.memoryPostgresChat",
+      "typeVersion": 1.3,
+      "position": [
+        544,
+        -160
+      ],
+      "id": "1d11771b-79b7-4c11-a2e2-b8ea4da3ed97",
+      "name": "Postgres Chat Memory",
+      "credentials": {
+        "postgres": {
+          "id": "PvxN2lJvTeiwsCwS",
+          "name": "Postgres account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "modelName": "models/gemini-3-flash-preview",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatGoogleGemini",
+      "typeVersion": 1,
+      "position": [
+        400,
+        -192
+      ],
+      "id": "d8ba1438-481f-4c2b-abdd-60495944f55a",
+      "name": "Google Gemini Chat Model",
+      "credentials": {
+        "googlePalmApi": {
+          "id": "iSbreAbig1AqjhAc",
+          "name": "Google Gemini(PaLM) Api account"
+        }
+      }
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Webhook": {
+      "main": [
+        [
+          {
+            "node": "If2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code in JavaScript1": {
+      "main": [
+        [
+          {
+            "node": "If1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "productos_sheet1": {
+      "main": [
+        []
+      ]
+    },
+    "If1": {
+      "main": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "No Operation, do nothing",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AI Agent": {
+      "main": [
+        [
+          {
+            "node": "Redis1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Redis1": {
+      "main": [
+        [
+          {
+            "node": "Chat",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "alltecno_document": {
+      "ai_tool": [
+        [
+          {
+            "node": "agente ia",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "productos_sheet": {
+      "main": [
+        [
+          {
+            "node": "Code in JavaScript",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code in JavaScript": {
+      "main": [
+        [
+          {
+            "node": "agente ia",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "agente ia": {
+      "main": [
+        [
+          {
+            "node": "HTTP Request",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "add_purchase_order": {
+      "ai_tool": [
+        [
+          {
+            "node": "agente ia",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If2": {
+      "main": [
+        [
+          {
+            "node": "Wait",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "productos_sheet",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "When chat message received": {
+      "main": [
+        [
+          {
+            "node": "productos_sheet1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Postgres Chat Memory": {
+      "ai_memory": [
+        [
+          {
+            "node": "agente ia",
+            "type": "ai_memory",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Google Gemini Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "agente ia",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate",
+    "availableInMCP": false
+  },
+  "versionId": "d12e9a51-cb2a-4b0f-b865-d583a7ed00b0",
+  "meta": {
+    "instanceId": "642088d41b7452c3183e153e8052a72b22e05f54840cf4b42f5955b46d0cfd8b"
+  },
+  "id": "iZ2yFqqAKYoILHjT",
+  "tags": []
+}
